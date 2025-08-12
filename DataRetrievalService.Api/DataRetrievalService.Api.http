@@ -1,0 +1,60 @@
+############################################################
+# DataRetrievalService — HTTP scratch file (Visual Studio)
+# How to use:
+# 1) Start the API (F5).
+# 2) Run "Auth: Login (Admin)" – copy the token from response.
+# 3) Paste token into the @token variable below.
+# 4) Run Create / Get / Update requests as needed.
+############################################################
+
+@host = https://localhost:5001
+@token =               // paste Bearer token here after login
+@id = 00000000-0000-0000-0000-000000000000  // set to a real id after creating
+
+###
+# Auth: Login (Admin)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+###
+# Auth: Login (User)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "User123!"
+}
+
+###
+# Data: Create (Admin only)
+POST {{host}}/data
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "hello from .http file"
+}
+
+# Note: Response returns a JSON with the created Id (GUID).
+# Copy that Id and set it in the @id variable at the top.
+
+###
+# Data: Get by Id (Admin or User)
+GET {{host}}/data/{{id}}
+Authorization: Bearer {{token}}
+
+###
+# Data: Update (Admin only)
+PUT {{host}}/data/{{id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "updated value"
+}

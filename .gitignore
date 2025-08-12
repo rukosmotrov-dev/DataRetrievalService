@@ -1,0 +1,70 @@
+# ---- OS junk
+.DS_Store
+Thumbs.db
+
+# ---- Build artifacts
+**/bin/
+**/obj/
+**/out/
+artifacts/
+
+# ---- VS / VS Code / Rider
+.vs/
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.sln.iml
+
+# ---- User-specific IDE files
+*.user
+*.suo
+*.userosscache
+*.userprefs
+
+# ---- NuGet
+*.nupkg
+packages/
+.nuget/
+
+# ---- Logs & coverage
+*.log
+logs/
+TestResults/
+coverage/
+coverage.cobertura.xml
+*.trx
+
+# ---- Dotnet tools local manifest (keep if you use it)
+# .config/dotnet-tools.json
+
+# ---- Secrets & env
+.env
+.env.local
+!.env.example
+
+# ASP.NET user secrets are stored outside the repo by default, nothing to ignore here.
+
+# ---- Docker local overrides
+docker-compose.override.yml
+
+# ---- Caching folder used by the app (file storage)
+# Ignore file cache content but allow a placeholder if you want to keep the folder
+**/StorageFiles/**
+!**/StorageFiles/.gitkeep
+
+# ---- Node (if you add a tiny frontend or scripts later)
+node_modules/
+
+# ---- Publish output
+**/publish/
+**/wwwroot/*min.*.map
+
+# ---- Rider/Resharper/other
+_ReSharper*/
+*.DotSettings.user
+*.orig
+
+# ---- Misc
+*.sqlite
+*.db

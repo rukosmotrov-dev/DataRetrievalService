@@ -1,0 +1,62 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: drs-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      # Succeeds when port 1433 is accepting connections
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/1433' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  redis:
+    image: redis:7
+    container_name: drs-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: DataRetrievalService.Api/Dockerfile
+    container_name: drs-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=mssql,1433;Database=DataRetrievalService;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+      Redis__UseRedis: "true"
+      Redis__Configuration: "redis:6379"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: DataRetrievalService
+      Jwt__Audience: DataRetrievalServiceClients
+      SeedUsers__AdminEmail: admin@example.com
+      SeedUsers__AdminPassword: ${SEED_ADMIN_PASSWORD}
+      SeedUsers__UserEmail: user@example.com
+      SeedUsers__UserPassword: ${SEED_USER_PASSWORD}
+      DisableHttpsRedirection: "true"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - filestore:/app/StorageFiles
+
+volumes:
+  mssql_data:
+  filestore:

@@ -1,0 +1,225 @@
+{
+  "info": {
+    "name": "DataRetrievalService",
+    "_postman_id": "5561f975-2ef3-4b4f-8a05-92de2ce1a9ac",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Requests for Auth + Data endpoints. Uses collection-level Bearer auth with {{token}}."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "description": "Logs in as Admin. Test script saves {{token}} for subsequent requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json;",
+                  "try { json = pm.response.json(); } catch(e) { json = null; }",
+                  "if (json && json.token) {",
+                  "  pm.environment.set('token', json.token);",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  pm.test('Saved token to environment', function () { pm.expect(pm.environment.get('token')).to.be.a('string'); });",
+                  "} else {",
+                  "  pm.test('Token present in response', function () { pm.expect.fail('No token field in response'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (User)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"User123!\"\n}"
+            },
+            "description": "Logs in as User role. Test script saves {{token}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json;",
+                  "try { json = pm.response.json(); } catch(e) { json = null; }",
+                  "if (json && json.token) {",
+                  "  pm.environment.set('token', json.token);",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  pm.test('Saved token to environment', function () { pm.expect(pm.environment.get('token')).to.be.a('string'); });",
+                  "} else {",
+                  "  pm.test('Token present in response', function () { pm.expect.fail('No token field in response'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Data",
+      "item": [
+        {
+          "name": "Create Data (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "data"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"hello from Postman\"\n}"
+            },
+            "description": "Creates a DataItem; requires Admin role. Test saves {{id}} from response."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json;",
+                  "try { json = pm.response.json(); } catch(e) { json = null; }",
+                  "if (json && json.id) {",
+                  "  pm.environment.set('id', json.id);",
+                  "  pm.collectionVariables.set('id', json.id);",
+                  "  pm.test('Saved id to environment', function () { pm.expect(pm.environment.get('id')).to.match(/^[0-9a-fA-F-]{36}$/); });",
+                  "} else {",
+                  "  pm.test('Id present in response', function () { pm.expect.fail('No id field in create response'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Data (Admin/User)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/data/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "data",
+                "{{id}}"
+              ]
+            },
+            "description": "Gets a DataItem by {{id}}. Requires Admin or User role."
+          }
+        },
+        {
+          "name": "Update Data (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/data/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "data",
+                "{{id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"updated via Postman\"\n}"
+            },
+            "description": "Updates a DataItem by {{id}}; requires Admin role."
+          }
+        }
+      ]
+    }
+  ]
+}
