@@ -1,22 +1,34 @@
 ﻿using DataRetrievalService.Application.Interfaces;
+using DataRetrievalService.Domain.Enums;
+using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
 
 namespace DataRetrievalService.Infrastructure.Factories
 {
     public class StorageFactory : IStorageFactory
     {
-        private readonly ICacheService _cache;
-        private readonly IFileStorageService _file;
-        private readonly IDataRepository _repo;
+        private readonly CacheStorageAdapter _cacheAdapter;
+        private readonly FileStorageAdapter _fileAdapter;
+        private readonly DatabaseStorageAdapter _dbAdapter;
 
-        public StorageFactory(ICacheService cache, IFileStorageService file, IDataRepository repo)
+        public StorageFactory(
+            ICacheService cache, 
+            IFileStorageService file, 
+            IDataRepository repo)
         {
-            _cache = cache; 
-            _file = file; 
-            _repo = repo;
+            _cacheAdapter = new CacheStorageAdapter(cache);
+            _fileAdapter = new FileStorageAdapter(file);
+            _dbAdapter = new DatabaseStorageAdapter(repo);
         }
 
-        public ICacheService Cache() => _cache;
-        public IFileStorageService File() => _file;
-        public IDataRepository Database() => _repo;
+        public IStorageService GetStorage(StorageType storageType)
+        {
+            return storageType switch
+            {
+                StorageType.Cache => _cacheAdapter,
+                StorageType.File => _fileAdapter,
+                StorageType.Database => _dbAdapter,
+                _ => throw new ArgumentException($"Unknown storage type: {storageType}", nameof(storageType))
+            };
+        }
     }
 }

@@ -4,6 +4,7 @@ using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Application.Mapping;
 using DataRetrievalService.Application.Options;
 using DataRetrievalService.Domain.Entities;
+using DataRetrievalService.Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -24,19 +25,21 @@ namespace DataRetrievalService.Tests.Application
             });
 
         private static IDataRetrievalService CreateSut(
-            out Mock<ICacheService> cache,
-            out Mock<IFileStorageService> file,
-            out Mock<IDataRepository> repo,
+            out Mock<IStorageService> cacheStorage,
+            out Mock<IStorageService> fileStorage,
+            out Mock<IStorageService> dbStorage,
             IOptions<DataRetrievalSettings>? settings = null)
         {
-            cache = new Mock<ICacheService>();
-            file = new Mock<IFileStorageService>();
-            repo = new Mock<IDataRepository>();
+            cacheStorage = new Mock<IStorageService>();
+            fileStorage = new Mock<IStorageService>();
+            dbStorage = new Mock<IStorageService>();
 
             var factory = new Mock<IStorageFactory>();
-            factory.Setup(f => f.Cache()).Returns(cache.Object);
-            factory.Setup(f => f.File()).Returns(file.Object);
-            factory.Setup(f => f.Database()).Returns(repo.Object);
+            
+            // Setup the GetStorage method to return our mock storage services
+            factory.Setup(f => f.GetStorage(StorageType.Cache)).Returns(cacheStorage.Object);
+            factory.Setup(f => f.GetStorage(StorageType.File)).Returns(fileStorage.Object);
+            factory.Setup(f => f.GetStorage(StorageType.Database)).Returns(dbStorage.Object);
 
             return new _DataRetrievalService(
                 factory.Object,
@@ -50,8 +53,9 @@ namespace DataRetrievalService.Tests.Application
         {
             // Arrange
             var id = Guid.NewGuid();
-            var entity = new DataItem { Id = id, Value = "cached", CreatedAt = DateTime.UtcNow };
-            var sut = CreateSut(out var cache, out var file, out var repo);
+            var data = "data1";
+            var entity = new DataItem { Id = id, Value = data, CreatedAt = DateTime.UtcNow };
+            var sut = CreateSut(out var cache, out var file, out var db);
             cache.Setup(c => c.GetAsync(id)).ReturnsAsync(entity);
 
             // Act
@@ -59,20 +63,22 @@ namespace DataRetrievalService.Tests.Application
 
             // Assert
             result.Should().NotBeNull();
-            result!.Value.Should().Be("cached");
+            result!.Value.Should().Be(data);
+            cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
             file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Never);
-            repo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+            db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Never);
         }
 
         [Fact]
-        public async Task GetAsync_on_cache_miss_hits_file_then_primes_cache()
+        public async Task GetAsync_on_cache_miss_hits_file_then_add_to_cache()
         {
             // Arrange
             var id = Guid.NewGuid();
-            var entity = new DataItem { Id = id, Value = "file", CreatedAt = DateTime.UtcNow };
+            var data = "data2";
+            var entity = new DataItem { Id = id, Value = data, CreatedAt = DateTime.UtcNow };
             var settings = Settings(cacheMin: 7, fileMin: 30);
 
-            var sut = CreateSut(out var cache, out var file, out var repo, settings);
+            var sut = CreateSut(out var cache, out var file, out var db, settings);
             cache.Setup(c => c.GetAsync(id)).ReturnsAsync((DataItem?)null);
             file.Setup(f => f.GetAsync(id)).ReturnsAsync(entity);
 
@@ -80,31 +86,37 @@ namespace DataRetrievalService.Tests.Application
             var result = await sut.GetAsync(id);
 
             // Assert
-            result!.Value.Should().Be("file");
-            cache.Verify(c => c.SetAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
-            repo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+            result!.Value.Should().Be(data);
+            cache.Verify(c => c.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
+            db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Never);
+            cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
+            file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]
-        public async Task GetAsync_on_cache_and_file_miss_hits_db_and_primes_both()
+        public async Task GetAsync_on_cache_and_file_miss_hits_db_and_add_to_file_and_cash()
         {
             // Arrange
             var id = Guid.NewGuid();
-            var entity = new DataItem { Id = id, Value = "db", CreatedAt = DateTime.UtcNow };
+            var data = "data3";
+            var entity = new DataItem { Id = id, Value = data, CreatedAt = DateTime.UtcNow };
             var settings = Settings(cacheMin: 10, fileMin: 25);
 
-            var sut = CreateSut(out var cache, out var file, out var repo, settings);
+            var sut = CreateSut(out var cache, out var file, out var db, settings);
             cache.Setup(c => c.GetAsync(id)).ReturnsAsync((DataItem?)null);
             file.Setup(f => f.GetAsync(id)).ReturnsAsync((DataItem?)null);
-            repo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(entity);
+            db.Setup(d => d.GetAsync(id)).ReturnsAsync(entity);
 
             // Act
             var result = await sut.GetAsync(id);
 
             // Assert
-            result!.Value.Should().Be("db");
+            result!.Value.Should().Be(data);
             file.Verify(f => f.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.FileTtlMinutes)), Times.Once);
-            cache.Verify(c => c.SetAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
+            cache.Verify(c => c.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
+            db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Once);
+            cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
+            file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]
@@ -112,17 +124,25 @@ namespace DataRetrievalService.Tests.Application
         {
             // Arrange
             var id = Guid.NewGuid();
-            var sut = CreateSut(out var cache, out var file, out var repo);
+            var sut = CreateSut(out var cache, out var file, out var db);
 
             cache.Setup(c => c.GetAsync(id)).ReturnsAsync((DataItem?)null);
             file.Setup(f => f.GetAsync(id)).ReturnsAsync((DataItem?)null);
-            repo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((DataItem?)null);
+            db.Setup(d => d.GetAsync(id)).ReturnsAsync((DataItem?)null);
 
             // Act
             var result = await sut.GetAsync(id);
 
             // Assert
             result.Should().BeNull();
+
+            db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Once);
+            cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
+            file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
+
+            cache.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
+            file.Verify(f => f.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
+            db.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
         }
 
         [Fact]
@@ -130,17 +150,18 @@ namespace DataRetrievalService.Tests.Application
         {
             // Arrange
             var settings = Settings(cacheMin: 9, fileMin: 33);
-            var sut = CreateSut(out var cache, out var file, out var repo, settings);
+            var sut = CreateSut(out var cache, out var file, out var db, settings);
+            var data = "hello";
 
             // Act
-            var created = await sut.CreateAsync(new CreateDataItemDto { Value = "hello" });
+            var created = await sut.CreateAsync(new CreateDataItemDto { Value = data });
 
             // Assert
             created.Id.Should().NotBeEmpty();
-            created.Value.Should().Be("hello");
-            repo.Verify(r => r.AddAsync(It.Is<DataItem>(d => d.Id == created.Id && d.Value == "hello")), Times.Once);
+            created.Value.Should().Be(data);
+            db.Verify(d => d.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id && d.Value == data), It.IsAny<TimeSpan>()), Times.Once);
             file.Verify(f => f.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), TimeSpan.FromMinutes(33)), Times.Once);
-            cache.Verify(c => c.SetAsync(It.Is<DataItem>(d => d.Id == created.Id), TimeSpan.FromMinutes(9)), Times.Once);
+            cache.Verify(c => c.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), TimeSpan.FromMinutes(9)), Times.Once);
         }
 
         [Fact]
@@ -149,18 +170,17 @@ namespace DataRetrievalService.Tests.Application
             // Arrange
             var id = Guid.NewGuid();
             var existing = new DataItem { Id = id, Value = "old", CreatedAt = DateTime.UtcNow.AddHours(-1) };
-            var sut = CreateSut(out var cache, out var file, out var repo);
+            var sut = CreateSut(out var cache, out var file, out var db);
 
-            repo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(existing);
+            db.Setup(d => d.GetAsync(id)).ReturnsAsync(existing);
 
             // Act
             await sut.UpdateAsync(id, new UpdateDataItemDto { Value = "new" });
 
             // Assert
-            repo.Verify(r => r.UpdateAsync(It.Is<DataItem>(d => d.Id == id && d.Value == "new")), Times.Once);
+            db.Verify(d => d.SaveAsync(It.Is<DataItem>(d => d.Id == id && d.Value == "new"), It.IsAny<TimeSpan>()), Times.Once);
             file.Verify(f => f.SaveAsync(It.Is<DataItem>(d => d.Id == id && d.Value == "new"), It.IsAny<TimeSpan>()), Times.Once);
-            cache.Verify(c => c.SetAsync(It.Is<DataItem>(d => d.Id == id && d.Value == "new"), It.IsAny<TimeSpan>()), Times.Once);
+            cache.Verify(c => c.SaveAsync(It.Is<DataItem>(d => d.Id == id && d.Value == "new"), It.IsAny<TimeSpan>()), Times.Once);
         }
     }
-
 }

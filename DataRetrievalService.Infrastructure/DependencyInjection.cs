@@ -5,6 +5,7 @@ using DataRetrievalService.Infrastructure.Factories;
 using DataRetrievalService.Infrastructure.Identity;
 using DataRetrievalService.Infrastructure.Repositories;
 using DataRetrievalService.Infrastructure.Storage;
+using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Retry;
@@ -20,6 +21,10 @@ namespace DataRetrievalService.Infrastructure
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IStorageFactory, StorageFactory>();
             services.AddScoped<IAuthService, AuthService>();
+
+            services.AddScoped<CacheStorageAdapter>();
+            services.AddScoped<FileStorageAdapter>();
+            services.AddScoped<DatabaseStorageAdapter>();
 
             services.Decorate<ICacheService, LoggingCacheServiceDecorator>();
             services.Decorate<IFileStorageService, LoggingFileStorageServiceDecorator>();

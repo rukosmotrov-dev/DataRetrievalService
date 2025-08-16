@@ -37,17 +37,17 @@ namespace DataRetrievalService.Application.Services
 
         public async Task<DataItemDto> CreateAsync(CreateDataItemDto dto)
         {
-            _logger.LogInformation($"{nameof(GetAsync)} starting.");
+            _logger.LogInformation($"{nameof(CreateAsync)} starting.");
             var sw = Stopwatch.StartNew();
             try
             {
                 var created = await _inner.CreateAsync(dto);
-                _logger.LogInformation($"{nameof(GetAsync)} finished Id = {created.Id} in {sw.ElapsedMilliseconds} ms.");
+                _logger.LogInformation($"{nameof(CreateAsync)} finished Id = {created.Id} in {sw.ElapsedMilliseconds} ms.");
                 return created;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{nameof(GetAsync)} failed after {sw.ElapsedMilliseconds} ms.");
+                _logger.LogError(ex, $"{nameof(CreateAsync)} failed after {sw.ElapsedMilliseconds} ms.");
                 throw;
             }
         }
