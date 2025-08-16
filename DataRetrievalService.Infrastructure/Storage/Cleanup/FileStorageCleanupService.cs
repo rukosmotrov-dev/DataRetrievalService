@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DataRetrievalService.Infrastructure.Storage
+namespace DataRetrievalService.Infrastructure.Storage.Cleanup
 {
     public sealed class FileStorageCleanupService(
         IOptions<FileStorageSettings> options,

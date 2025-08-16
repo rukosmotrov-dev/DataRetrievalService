@@ -3,7 +3,7 @@ using DataRetrievalService.Domain.Entities;
 using DataRetrievalService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataRetrievalService.Infrastructure.Repositories
+namespace DataRetrievalService.Infrastructure.Storage.Services
 {
     public class DataRepository : IDataRepository
     {

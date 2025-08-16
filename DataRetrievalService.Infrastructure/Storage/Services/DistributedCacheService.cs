@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Polly;
 using System.Text.Json;
 
-namespace DataRetrievalService.Infrastructure.Cache
+namespace DataRetrievalService.Infrastructure.Storage.Services
 {
     public class DistributedCacheService : ICacheService
     {

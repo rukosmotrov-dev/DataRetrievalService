@@ -1,10 +1,8 @@
 ﻿using DataRetrievalService.Application.Interfaces;
-using DataRetrievalService.Infrastructure.Cache;
 using DataRetrievalService.Infrastructure.Decorators;
 using DataRetrievalService.Infrastructure.Factories;
 using DataRetrievalService.Infrastructure.Identity;
-using DataRetrievalService.Infrastructure.Repositories;
-using DataRetrievalService.Infrastructure.Storage;
+using DataRetrievalService.Infrastructure.Storage.Services;
 using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;

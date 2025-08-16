@@ -1,5 +1,5 @@
 ﻿using DataRetrievalService.Domain.Entities;
-using DataRetrievalService.Infrastructure.Cache;
+using DataRetrievalService.Infrastructure.Storage.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;

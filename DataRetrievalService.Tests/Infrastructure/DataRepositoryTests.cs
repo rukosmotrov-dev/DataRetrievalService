@@ -1,6 +1,6 @@
 ﻿using DataRetrievalService.Domain.Entities;
 using DataRetrievalService.Infrastructure.Persistence;
-using DataRetrievalService.Infrastructure.Repositories;
+using DataRetrievalService.Infrastructure.Storage.Services;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 

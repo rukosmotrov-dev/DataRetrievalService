@@ -6,7 +6,7 @@ using DataRetrievalService.Application.Options;
 using DataRetrievalService.Infrastructure;
 using DataRetrievalService.Infrastructure.Identity;
 using DataRetrievalService.Infrastructure.Persistence;
-using DataRetrievalService.Infrastructure.Storage;
+using DataRetrievalService.Infrastructure.Storage.Cleanup;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
-namespace DataRetrievalService.Infrastructure.Storage
+namespace DataRetrievalService.Infrastructure.Storage.Services
 {
     public class FileStorageService : IFileStorageService
     {

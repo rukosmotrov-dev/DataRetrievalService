@@ -1,6 +1,6 @@
 ﻿using DataRetrievalService.Application.Options;
 using DataRetrievalService.Domain.Entities;
-using DataRetrievalService.Infrastructure.Storage;
+using DataRetrievalService.Infrastructure.Storage.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
