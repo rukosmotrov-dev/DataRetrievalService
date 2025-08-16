@@ -3,6 +3,14 @@
 ASP.NET Core 9.0 Web API implementing a **multi-layered data retrieval service** with caching (Redis), file storage (with cleanup), database (MSSQL Server).\
 Supports **JWT authentication**, role-based authorization (Admin/User),  and Docker-based deployment
 
+## Why .NET 9 (STS) for this assignment?
+
+> In short: I chose **.NET 9 (STS)** because it’s the latest stable release (as of Aug 2025) and enables the latest C# and ASP.NET Core features. For a small, short-lived assignment, the 18-month STS window is sufficient, and there’s a straightforward path to upgrade to the next LTS (**.NET 10**) if the project evolves.
+
+- **Latest platform & language features:** The project uses .NET 9 with C# 13 to benefit from up-to-date capabilities (e.g., improved `lock`, `params` collections, quality-of-life language updates) and recent ASP.NET Core improvements (built-in OpenAPI generation, better perf/monitoring, broader Native AOT support).
+- **Lower dependency surface:** ASP.NET Core 9 provides **built-in OpenAPI** (`Microsoft.AspNetCore.OpenApi`), reducing reliance on extra packages and improving trim/AOT friendliness.
+- **Easy upgrade path:** If this evolves into something long-lived, the codebase can be upgraded to the next LTS (.NET 10) with a routine framework/package bump and test run.
+
 ---
 
 ## **Features**
