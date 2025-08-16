@@ -1,9 +1,8 @@
 ﻿using DataRetrievalService.Domain.Enums;
 
-namespace DataRetrievalService.Application.Interfaces
+namespace DataRetrievalService.Application.Interfaces;
+
+public interface IStorageFactory
 {
-    public interface IStorageFactory
-    {
-        IStorageService GetStorage(StorageType storageType);
-    }
+    IStorageService GetStorage(StorageType storageType);
 }

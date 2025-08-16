@@ -1,11 +1,10 @@
 ﻿using DataRetrievalService.Application.DTOs;
 
-namespace DataRetrievalService.Application.Interfaces
+namespace DataRetrievalService.Application.Interfaces;
+
+public interface IDataRetrievalService
 {
-    public interface IDataRetrievalService
-    {
-        Task<DataItemDto?> GetAsync(Guid id);
-        Task<DataItemDto> CreateAsync(CreateDataItemDto dto);
-        Task UpdateAsync(Guid id, UpdateDataItemDto dto);
-    }
+    Task<DataItemDto?> GetAsync(Guid id);
+    Task<DataItemDto> CreateAsync(CreateDataItemDto dto);
+    Task UpdateAsync(Guid id, UpdateDataItemDto dto);
 }

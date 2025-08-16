@@ -1,10 +1,9 @@
 ﻿using DataRetrievalService.Domain.Entities;
 
-namespace DataRetrievalService.Application.Interfaces
+namespace DataRetrievalService.Application.Interfaces;
+
+public interface IFileStorageService
 {
-    public interface IFileStorageService
-    {
-        Task<DataItem?> GetAsync(Guid id);
-        Task SaveAsync(DataItem item, TimeSpan ttl);
-    }
+    Task<DataItem?> GetAsync(Guid id);
+    Task SaveAsync(DataItem item, TimeSpan ttl);
 }

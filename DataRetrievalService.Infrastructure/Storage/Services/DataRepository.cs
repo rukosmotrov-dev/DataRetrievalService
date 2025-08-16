@@ -3,26 +3,22 @@ using DataRetrievalService.Domain.Entities;
 using DataRetrievalService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataRetrievalService.Infrastructure.Storage.Services
+namespace DataRetrievalService.Infrastructure.Storage.Services;
+
+public sealed class DataRepository(AppDbContext dbContext) : IDataRepository
 {
-    public class DataRepository : IDataRepository
+    public Task<DataItem?> GetByIdAsync(Guid id) => 
+        dbContext.DataItems.FirstOrDefaultAsync(x => x.Id == id);
+
+    public async Task AddAsync(DataItem item)
     {
-        private readonly AppDbContext _dbContext;
-        public DataRepository(AppDbContext db) => _dbContext = db;
+        dbContext.DataItems.Add(item);
+        await dbContext.SaveChangesAsync();
+    }
 
-        public async Task<DataItem?> GetByIdAsync(Guid id) => 
-            await _dbContext.DataItems.FirstOrDefaultAsync(x => x.Id == id);
-
-        public async Task AddAsync(DataItem item)
-        {
-            _dbContext.DataItems.Add(item);
-            await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(DataItem item)
-        {
-            _dbContext.DataItems.Update(item);
-            await _dbContext.SaveChangesAsync();
-        }
+    public async Task UpdateAsync(DataItem item)
+    {
+        dbContext.DataItems.Update(item);
+        await dbContext.SaveChangesAsync();
     }
 }

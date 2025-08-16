@@ -1,9 +1,8 @@
-﻿namespace DataRetrievalService.Application.Options
+﻿namespace DataRetrievalService.Application.Options;
+
+public sealed class FileStorageSettings
 {
-    public class FileStorageSettings
-    {
-        public string? Path { get; set; }
-        public const string DefaultFolderName = "StorageFiles";
-        public int CleanupIntervalMinutes { get; set; }
-    }
+    public const string DefaultFolderName = "StorageFiles";
+    public string Path { get; set; } = string.Empty;
+    public int CleanupIntervalMinutes { get; set; } = 31;
 }

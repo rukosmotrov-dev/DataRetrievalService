@@ -1,11 +1,7 @@
-﻿namespace DataRetrievalService.Application.Options
+﻿namespace DataRetrievalService.Application.Options;
+
+public sealed class DataRetrievalSettings
 {
-    /// <summary>
-    /// Settings for cache/file TTLs, bound from appsettings.json (DataRetrieval section).
-    /// </summary>
-    public class DataRetrievalSettings
-    {
-        public int CacheTtlMinutes { get; set; }
-        public int FileTtlMinutes { get; set; }
-    }
+    public int CacheTtlMinutes { get; set; } = 10;
+    public int FileTtlMinutes { get; set; } = 30;
 }

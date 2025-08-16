@@ -1,9 +1,8 @@
-namespace DataRetrievalService.Domain.Enums
+namespace DataRetrievalService.Domain.Enums;
+
+public enum StorageType
 {
-    public enum StorageType
-    {
-        Cache,
-        File,
-        Database
-    }
+    Cache,
+    File,
+    Database
 }

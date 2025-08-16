@@ -1,33 +1,17 @@
 using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Domain.Entities;
 
-namespace DataRetrievalService.Infrastructure.Storage.StorageAdapters
+namespace DataRetrievalService.Infrastructure.Storage.StorageAdapters;
+
+public sealed class DatabaseStorageAdapter(IDataRepository repo) : IStorageService
 {
-    public class DatabaseStorageAdapter : IStorageService
+    public Task<DataItem?> GetAsync(Guid id) => repo.GetByIdAsync(id);
+    
+    public async Task SaveAsync(DataItem item, TimeSpan ttl)
     {
-        private readonly IDataRepository _dataRepository;
-
-        public DatabaseStorageAdapter(IDataRepository dataRepository)
-        {
-            _dataRepository = dataRepository;
-        }
-
-        public async Task<DataItem?> GetAsync(Guid id)
-        {
-            return await _dataRepository.GetByIdAsync(id);
-        }
-
-        public async Task SaveAsync(DataItem item, TimeSpan ttl)
-        {
-            var existing = await _dataRepository.GetByIdAsync(item.Id);
-            if (existing != null)
-            {
-                await _dataRepository.UpdateAsync(item);
-            }
-            else
-            {
-                await _dataRepository.AddAsync(item);
-            }
-        }
+        if (await repo.GetByIdAsync(item.Id) is null)
+            await repo.AddAsync(item);
+        else
+            await repo.UpdateAsync(item);
     }
 }

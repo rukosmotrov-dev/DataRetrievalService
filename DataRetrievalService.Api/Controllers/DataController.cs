@@ -6,42 +6,55 @@ using DataRetrievalService.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DataRetrievalService.Api.Controllers
+namespace DataRetrievalService.Api.Controllers;
+
+[ApiController]
+[Route("data")]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
+public class DataController(IDataRetrievalService service, IMapper mapper) : ControllerBase
 {
-    [Route("data")]
-    [ApiController]
-    public class DataController(IDataRetrievalService service, IMapper mapper) : ControllerBase
+    private readonly IDataRetrievalService _service = service;
+    private readonly IMapper _mapper = mapper;
+    private const string UserAndAdminRoles = $"{nameof(UserRole.Admin)},{nameof(UserRole.User)}";
+    private const string AdminRole = $"{nameof(UserRole.Admin)}";
+
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = UserAndAdminRoles)]
+    [ProducesResponseType(typeof(DataItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DataItemResponse>> Get(Guid id)
     {
-        private readonly IDataRetrievalService _service = service;
-        private readonly IMapper _mapper = mapper;
-        private const string UserAndAdminRoles = $"{nameof(UserRole.Admin)},{nameof(UserRole.User)}";
-        private const string AdminRole = $"{nameof(UserRole.Admin)}";
+        var item = await _service.GetAsync(id);
+        if (item is null)
+            return NotFound();
 
-        [HttpGet("{id:guid}")]
-        [Authorize(Roles = UserAndAdminRoles)]
-        public async Task<IActionResult> Get(Guid id)
-        {
-            var dto = await _service.GetAsync(id);
-            return dto is null ? NotFound() : Ok(_mapper.Map<DataItemResponse>(dto));
-        }
+        return Ok(_mapper.Map<DataItemResponse>(item));
+    }
 
-        [HttpPost]
-        [Authorize(Roles = AdminRole)]
-        public async Task<IActionResult> Create([FromBody] CreateDataItemRequest req)
-        {
-            var createdData = await service.CreateAsync(new CreateDataItemDto { Value = req.Value });
-            var response = _mapper.Map<DataItemResponse>(createdData);
+    [HttpPost]
+    [Authorize(Roles = AdminRole)]
+    [ProducesResponseType(typeof(DataItemResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<DataItemResponse>> Create([FromBody] CreateDataItemRequest request)
+    {
+        var dto = _mapper.Map<CreateDataItemDto>(request);
+        var item = await _service.CreateAsync(dto);
 
-            return CreatedAtAction(nameof(Get), new { id = response.Id }, response);
-        }
+        return CreatedAtAction(nameof(Get), new { id = item.Id },
+            _mapper.Map<DataItemResponse>(item));
+    }
 
-        [HttpPut("{id:guid}")]
-        [Authorize(Roles = AdminRole)]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDataItemRequest request)
-        {
-            await service.UpdateAsync(id, _mapper.Map<UpdateDataItemDto>(request));
-
-            return NoContent();
-        }
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = AdminRole)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDataItemRequest request)
+    {
+        var dto = _mapper.Map<UpdateDataItemDto>(request);
+        await _service.UpdateAsync(id, dto);
+        return NoContent();
     }
 }

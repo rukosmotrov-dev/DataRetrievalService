@@ -1,9 +1,8 @@
-﻿namespace DataRetrievalService.Application.DTOs
+﻿namespace DataRetrievalService.Application.DTOs;
+
+public record DataItemDto
 {
-    public class DataItemDto
-    {
-        public Guid Id { get; set; }
-        public string Value { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
-    }
+    public required Guid Id { get; init; }
+    public required string Value { get; init; }
+    public required DateTime CreatedAt { get; init; }
 }

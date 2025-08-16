@@ -1,25 +1,11 @@
 using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Domain.Entities;
 
-namespace DataRetrievalService.Infrastructure.Storage.StorageAdapters
+namespace DataRetrievalService.Infrastructure.Storage.StorageAdapters;
+
+public sealed class FileStorageAdapter(IFileStorageService file) : IStorageService
 {
-    public class FileStorageAdapter : IStorageService
-    {
-        private readonly IFileStorageService _fileStorageService;
-
-        public FileStorageAdapter(IFileStorageService fileStorageService)
-        {
-            _fileStorageService = fileStorageService;
-        }
-
-        public async Task<DataItem?> GetAsync(Guid id)
-        {
-            return await _fileStorageService.GetAsync(id);
-        }
-
-        public async Task SaveAsync(DataItem item, TimeSpan ttl)
-        {
-            await _fileStorageService.SaveAsync(item, ttl);
-        }
-    }
+    public Task<DataItem?> GetAsync(Guid id) => file.GetAsync(id);
+    
+    public Task SaveAsync(DataItem item, TimeSpan ttl) => file.SaveAsync(item, ttl);
 }

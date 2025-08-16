@@ -1,8 +1,7 @@
-﻿namespace DataRetrievalService.Domain.Enums
+﻿namespace DataRetrievalService.Domain.Enums;
+
+public enum UserRole
 {
-    public enum UserRole
-    {
-        Admin,
-        User
-    }
+    User,
+    Admin
 }

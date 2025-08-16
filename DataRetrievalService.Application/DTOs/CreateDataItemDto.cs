@@ -1,7 +1,6 @@
-﻿namespace DataRetrievalService.Application.DTOs
+﻿namespace DataRetrievalService.Application.DTOs;
+
+public record CreateDataItemDto
 {
-    public class CreateDataItemDto
-    {
-        public string Value { get; set; } = string.Empty;
-    }
+    public required string Value { get; init; }
 }
