@@ -2,16 +2,14 @@
 using DataRetrievalService.Api.Contracts.Data;
 using DataRetrievalService.Application.DTOs;
 
-namespace DataRetrievalService.Api.Mapping
-{
-    public class ApiMappingProfile : Profile
-    {
-        public ApiMappingProfile()
-        {
-            CreateMap<DataItemDto, DataItemResponse>();
+namespace DataRetrievalService.Api.Mapping;
 
-            CreateMap<CreateDataItemRequest, CreateDataItemDto>();
-            CreateMap<UpdateDataItemRequest, UpdateDataItemDto>();
-        }
+public class ApiMappingProfile : Profile
+{
+    public ApiMappingProfile()
+    {
+        CreateMap<CreateDataItemRequest, CreateDataItemDto>();
+        CreateMap<UpdateDataItemRequest, UpdateDataItemDto>();
+        CreateMap<DataItemDto, DataItemResponse>();
     }
 }

@@ -1,9 +1,8 @@
-﻿namespace DataRetrievalService.Application.Interfaces
+﻿using DataRetrievalService.Domain.Enums;
+
+namespace DataRetrievalService.Application.Interfaces;
+
+public interface IStorageFactory
 {
-    public interface IStorageFactory
-    {
-        ICacheService Cache();
-        IFileStorageService File();
-        IDataRepository Database();
-    }
+    IStorageService GetStorage(StorageType storageType);
 }

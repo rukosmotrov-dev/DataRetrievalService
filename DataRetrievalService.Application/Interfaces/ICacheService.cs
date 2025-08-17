@@ -1,10 +1,9 @@
 ﻿using DataRetrievalService.Domain.Entities;
 
-namespace DataRetrievalService.Application.Interfaces
+namespace DataRetrievalService.Application.Interfaces;
+
+public interface ICacheService
 {
-    public interface ICacheService
-    {
-        Task<DataItem?> GetAsync(Guid id);
-        Task SetAsync(DataItem item, TimeSpan ttl);
-    }
+    Task<DataItem?> GetAsync(Guid id);
+    Task SetAsync(DataItem item, TimeSpan ttl);
 }
