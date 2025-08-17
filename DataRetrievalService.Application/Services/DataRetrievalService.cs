@@ -14,6 +14,10 @@ public sealed class DataRetrievalService : IDataRetrievalService
     private readonly IMapper _mapper;
     private readonly TimeSpan _cacheTtl;
     private readonly TimeSpan _fileTtl;
+    
+    private readonly IStorageService _cache;
+    private readonly IStorageService _file;
+    private readonly IStorageService _db;
 
     public DataRetrievalService(
         IStorageFactory factory,
@@ -26,35 +30,33 @@ public sealed class DataRetrievalService : IDataRetrievalService
         var cfg = settings.Value ?? new DataRetrievalSettings();
         _cacheTtl = TimeSpan.FromMinutes(Math.Max(0, cfg.CacheTtlMinutes));
         _fileTtl = TimeSpan.FromMinutes(Math.Max(0, cfg.FileTtlMinutes));
+        
+        _cache = factory.GetStorage(StorageType.Cache);
+        _file = factory.GetStorage(StorageType.File);
+        _db = factory.GetStorage(StorageType.Database);
     }
 
     public async Task<DataItemDto?> GetAsync(Guid id)
     {
-        var cache = _factory.GetStorage(StorageType.Cache);
-        var item = await cache.GetAsync(id);
-        
+        var item = await _cache.GetAsync(id);
         if (item is not null)
         {
-            return _mapper.Map<DataItemDto>(item);
+            return MapToDto(item);
         }
 
-        var file = _factory.GetStorage(StorageType.File);
-        item = await file.GetAsync(id);
-        
+        item = await _file.GetAsync(id);
         if (item is not null)
         {
-            await cache.SaveAsync(item, _cacheTtl);
-            return _mapper.Map<DataItemDto>(item);
+            await _cache.SaveAsync(item, _cacheTtl);
+            return MapToDto(item);
         }
 
-        var db = _factory.GetStorage(StorageType.Database);
-        item = await db.GetAsync(id);
-        
+        item = await _db.GetAsync(id);
         if (item is not null)
         {
-            await file.SaveAsync(item, _fileTtl);
-            await cache.SaveAsync(item, _cacheTtl);
-            return _mapper.Map<DataItemDto>(item);
+            await _file.SaveAsync(item, _fileTtl);
+            await _cache.SaveAsync(item, _cacheTtl);
+            return MapToDto(item);
         }
 
         return null;
@@ -64,31 +66,28 @@ public sealed class DataRetrievalService : IDataRetrievalService
     {
         var entity = CreateDataItem(dto.Value);
 
-        var db = _factory.GetStorage(StorageType.Database);
-        var file = _factory.GetStorage(StorageType.File);
-        var cache = _factory.GetStorage(StorageType.Cache);
+        await SaveToMultipleStorages(entity);
 
-        await db.SaveAsync(entity, TimeSpan.Zero);
-        await file.SaveAsync(entity, _fileTtl);
-        await cache.SaveAsync(entity, _cacheTtl);
-
-        return _mapper.Map<DataItemDto>(entity);
+        return MapToDto(entity);
     }
 
     public async Task UpdateAsync(Guid id, UpdateDataItemDto dto)
     {
-        var db = _factory.GetStorage(StorageType.Database);
-        var entity = await db.GetAsync(id) ?? CreateDataItem(string.Empty);
+        var entity = await _db.GetAsync(id) ?? CreateDataItem(string.Empty);
         entity.Value = dto.Value;
 
-        await db.SaveAsync(entity, TimeSpan.Zero);
-        
-        var file = _factory.GetStorage(StorageType.File);
-        var cache = _factory.GetStorage(StorageType.Cache);
-
-        await file.SaveAsync(entity, _fileTtl);
-        await cache.SaveAsync(entity, _cacheTtl);
+        await SaveToMultipleStorages(entity);
     }
+
+    private async Task SaveToMultipleStorages(DataItem entity)
+    {
+        await _db.SaveAsync(entity, TimeSpan.Zero);
+        
+        await _file.SaveAsync(entity, _fileTtl);
+        await _cache.SaveAsync(entity, _cacheTtl);
+    }
+
+    private DataItemDto MapToDto(DataItem item) => _mapper.Map<DataItemDto>(item);
 
     private static DataItem CreateDataItem(string value) => new()
     {
