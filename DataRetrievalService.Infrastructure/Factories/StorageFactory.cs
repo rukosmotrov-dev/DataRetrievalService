@@ -1,6 +1,5 @@
 using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Application.Options;
-using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

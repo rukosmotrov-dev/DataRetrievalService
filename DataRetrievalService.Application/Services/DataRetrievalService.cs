@@ -63,7 +63,7 @@ public sealed class DataRetrievalService : IDataRetrievalService
     {
         var item = await GetAsync(id);
         if (item == null)
-            throw new Exception($"Record with ID - {id} not found.");
+            throw new InvalidOperationException($"Record with ID - {id} not found.");
 
         var entity = new DataItem
         {
