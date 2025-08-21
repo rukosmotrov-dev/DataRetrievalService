@@ -53,6 +53,10 @@ public class DataController(IDataRetrievalService service, IMapper mapper) : Con
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDataItemRequest request)
     {
+        var item = await _service.GetAsync(id);
+        if (item is null)
+            return NotFound();
+
         var dto = _mapper.Map<UpdateDataItemDto>(request);
         await _service.UpdateAsync(id, dto);
         return NoContent();

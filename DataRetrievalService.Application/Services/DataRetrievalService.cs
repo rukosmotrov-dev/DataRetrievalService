@@ -10,7 +10,6 @@ namespace DataRetrievalService.Application.Services;
 
 public sealed class DataRetrievalService : IDataRetrievalService
 {
-    private readonly IStorageFactory _factory;
     private readonly IMapper _mapper;
     private readonly TimeSpan _cacheTtl;
     private readonly TimeSpan _fileTtl;
@@ -24,7 +23,6 @@ public sealed class DataRetrievalService : IDataRetrievalService
         IMapper mapper,
         IOptions<DataRetrievalSettings> settings)
     {
-        _factory = factory;
         _mapper = mapper;
 
         var cfg = settings.Value ?? new DataRetrievalSettings();
@@ -73,7 +71,8 @@ public sealed class DataRetrievalService : IDataRetrievalService
 
     public async Task UpdateAsync(Guid id, UpdateDataItemDto dto)
     {
-        var entity = await _db.GetAsync(id) ?? CreateDataItem(string.Empty);
+        var entity = await _db.GetAsync(id) ?? throw new Exception($"Record with ID - {id} not found.");
+
         entity.Value = dto.Value;
 
         await SaveToMultipleStorages(entity);
