@@ -1,23 +1,52 @@
-﻿using DataRetrievalService.Application.Interfaces;
-using DataRetrievalService.Domain.Enums;
-using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
+using DataRetrievalService.Application.Interfaces;
+using DataRetrievalService.Application.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DataRetrievalService.Infrastructure.Factories;
 
-public sealed class StorageFactory(
-    ICacheService cache,
-    IFileStorageService file,
-    IDataRepository repo) : IStorageFactory
+public sealed class StorageFactory : IStorageFactory
 {
-    private readonly CacheStorageAdapter _cacheAdapter = new(cache);
-    private readonly FileStorageAdapter _fileAdapter = new(file);
-    private readonly DatabaseStorageAdapter _dbAdapter = new(repo);
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<StorageFactory> _logger;
+    private readonly StorageSettings _storageSettings;
+    private readonly Dictionary<string, IStorageService> _storageDictionary = new();
 
-    public IStorageService GetStorage(StorageType storageType) => storageType switch
+    public StorageFactory(
+        IServiceProvider serviceProvider, 
+        ILogger<StorageFactory> logger,
+        IOptions<StorageSettings> storageSettings)
     {
-        StorageType.Cache => _cacheAdapter,
-        StorageType.File => _fileAdapter,
-        StorageType.Database => _dbAdapter,
-        _ => throw new ArgumentException($"Unknown storage type: {storageType}", nameof(storageType))
-    };
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+        _storageSettings = storageSettings.Value ?? new StorageSettings();
+
+        InitializeStorages();
+    }
+
+    private void InitializeStorages()
+    {
+        CreateConfiguredStorages();
+    }
+
+    private void CreateConfiguredStorages()
+    {
+        var storageServices = _serviceProvider.GetServices<IStorageService>();
+
+        foreach (var storage in storageServices)
+        {
+            var config = _storageSettings.Storages.FirstOrDefault(s => s.Type == storage.StorageType);
+            if (config != null)
+            {
+                _storageDictionary[storage.StorageType] = storage;
+                _logger.LogInformation($"Storage registered: {config.Name} ({storage.StorageType}) with priority {config.Priority}.");
+            }
+        }
+    }
+
+    public IEnumerable<IStorageService> GetAllStorages()
+    {
+        return _storageDictionary.Values;
+    }
 }

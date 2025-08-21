@@ -18,7 +18,17 @@ public sealed class DataRepository(AppDbContext dbContext) : IDataRepository
 
     public async Task UpdateAsync(DataItem item)
     {
-        dbContext.DataItems.Update(item);
+        var existingEntity = dbContext.DataItems.Local.FirstOrDefault(x => x.Id == item.Id);
+        
+        if (existingEntity != null)
+        {
+            dbContext.Entry(existingEntity).CurrentValues.SetValues(item);
+        }
+        else
+        {
+            dbContext.DataItems.Update(item);
+        }
+        
         await dbContext.SaveChangesAsync();
     }
 }

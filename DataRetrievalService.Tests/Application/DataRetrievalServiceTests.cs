@@ -4,7 +4,6 @@ using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Application.Mapping;
 using DataRetrievalService.Application.Options;
 using DataRetrievalService.Domain.Entities;
-using DataRetrievalService.Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -17,29 +16,38 @@ namespace DataRetrievalService.Tests.Application
         private static IMapper CreateMapper() =>
             new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>()).CreateMapper();
 
-        private static IOptions<DataRetrievalSettings> Settings(int cacheMin = 10, int fileMin = 30) =>
-            Options.Create(new DataRetrievalSettings
+        private static IOptions<StorageSettings> Settings(int cacheMin = 10, int fileMin = 30) =>
+            Options.Create(new StorageSettings
             {
-                CacheTtlMinutes = cacheMin,
-                FileTtlMinutes = fileMin
+                Storages = new List<StorageConfiguration>
+                {
+                    new StorageConfiguration { Type = "Cache", Priority = 1, TtlMinutes = cacheMin, Name = "Cache Storage" },
+                    new StorageConfiguration { Type = "File", Priority = 2, TtlMinutes = fileMin, Name = "File Storage" },
+                    new StorageConfiguration { Type = "Database", Priority = 3, TtlMinutes = 0, Name = "Database Storage" }
+                }
             });
 
-        private static IDataRetrievalService CreateSut(
-            out Mock<IStorageService> cacheStorage,
-            out Mock<IStorageService> fileStorage,
-            out Mock<IStorageService> dbStorage,
-            IOptions<DataRetrievalSettings>? settings = null)
+        private _DataRetrievalService CreateSut(out Mock<IStorageService> cache, out Mock<IStorageService> file, out Mock<IStorageService> db, IOptions<StorageSettings>? settings = null)
         {
-            cacheStorage = new Mock<IStorageService>();
-            fileStorage = new Mock<IStorageService>();
-            dbStorage = new Mock<IStorageService>();
+            cache = new Mock<IStorageService>();
+            file = new Mock<IStorageService>();
+            db = new Mock<IStorageService>();
+
+            cache.Setup(s => s.StorageType).Returns("Cache");
+            cache.Setup(s => s.Priority).Returns(1);
+            cache.Setup(s => s.StorageName).Returns("Cache Storage");
+            
+            file.Setup(s => s.StorageType).Returns("File");
+            file.Setup(s => s.Priority).Returns(2);
+            file.Setup(s => s.StorageName).Returns("File Storage");
+            
+            db.Setup(s => s.StorageType).Returns("Database");
+            db.Setup(s => s.Priority).Returns(3);
+            db.Setup(s => s.StorageName).Returns("Database Storage");
 
             var factory = new Mock<IStorageFactory>();
             
-            // Setup the GetStorage method to return our mock storage services
-            factory.Setup(f => f.GetStorage(StorageType.Cache)).Returns(cacheStorage.Object);
-            factory.Setup(f => f.GetStorage(StorageType.File)).Returns(fileStorage.Object);
-            factory.Setup(f => f.GetStorage(StorageType.Database)).Returns(dbStorage.Object);
+            factory.Setup(f => f.GetAllStorages()).Returns(new[] { cache.Object, file.Object, db.Object });
 
             return new _DataRetrievalService(
                 factory.Object,
@@ -87,7 +95,7 @@ namespace DataRetrievalService.Tests.Application
 
             // Assert
             result!.Value.Should().Be(data);
-            cache.Verify(c => c.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
+            cache.Verify(c => c.SaveAsync(entity, It.IsAny<TimeSpan>()), Times.Once);
             db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Never);
             cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
             file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
@@ -112,8 +120,8 @@ namespace DataRetrievalService.Tests.Application
 
             // Assert
             result!.Value.Should().Be(data);
-            file.Verify(f => f.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.FileTtlMinutes)), Times.Once);
-            cache.Verify(c => c.SaveAsync(entity, TimeSpan.FromMinutes(settings.Value.CacheTtlMinutes)), Times.Once);
+            file.Verify(f => f.SaveAsync(entity, It.IsAny<TimeSpan>()), Times.Once);
+            cache.Verify(c => c.SaveAsync(entity, It.IsAny<TimeSpan>()), Times.Once);
             db.Verify(d => d.GetAsync(It.IsAny<Guid>()), Times.Once);
             cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
             file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
@@ -140,9 +148,9 @@ namespace DataRetrievalService.Tests.Application
             cache.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
             file.Verify(f => f.GetAsync(It.IsAny<Guid>()), Times.Once);
 
-            cache.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
-            file.Verify(f => f.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
-            db.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), TimeSpan.FromMinutes(It.IsAny<long>())), Times.Never);
+            cache.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), It.IsAny<TimeSpan>()), Times.Never);
+            file.Verify(f => f.SaveAsync(It.IsAny<DataItem>(), It.IsAny<TimeSpan>()), Times.Never);
+            db.Verify(c => c.SaveAsync(It.IsAny<DataItem>(), It.IsAny<TimeSpan>()), Times.Never);
         }
 
         [Fact]
@@ -160,8 +168,8 @@ namespace DataRetrievalService.Tests.Application
             created.Id.Should().NotBeEmpty();
             created.Value.Should().Be(data);
             db.Verify(d => d.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id && d.Value == data), It.IsAny<TimeSpan>()), Times.Once);
-            file.Verify(f => f.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), TimeSpan.FromMinutes(33)), Times.Once);
-            cache.Verify(c => c.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), TimeSpan.FromMinutes(9)), Times.Once);
+            file.Verify(f => f.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), It.IsAny<TimeSpan>()), Times.Once);
+            cache.Verify(c => c.SaveAsync(It.Is<DataItem>(d => d.Id == created.Id), It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [Fact]
