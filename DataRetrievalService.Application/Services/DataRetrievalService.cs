@@ -1,9 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using DataRetrievalService.Application.DTOs;
 using DataRetrievalService.Application.Interfaces;
 using DataRetrievalService.Application.Options;
 using DataRetrievalService.Domain.Entities;
-using DataRetrievalService.Domain.Enums;
 using Microsoft.Extensions.Options;
 
 namespace DataRetrievalService.Application.Services;
@@ -11,50 +10,33 @@ namespace DataRetrievalService.Application.Services;
 public sealed class DataRetrievalService : IDataRetrievalService
 {
     private readonly IMapper _mapper;
-    private readonly TimeSpan _cacheTtl;
-    private readonly TimeSpan _fileTtl;
-    
-    private readonly IStorageService _cache;
-    private readonly IStorageService _file;
-    private readonly IStorageService _db;
+    private readonly IStorageFactory _storageFactory;
+    private readonly StorageSettings _storageSettings;
 
     public DataRetrievalService(
-        IStorageFactory factory,
+        IStorageFactory storageFactory,
         IMapper mapper,
-        IOptions<DataRetrievalSettings> settings)
+        IOptions<StorageSettings> storageSettings)
     {
+        _storageFactory = storageFactory;
         _mapper = mapper;
-
-        var cfg = settings.Value ?? new DataRetrievalSettings();
-        _cacheTtl = TimeSpan.FromMinutes(Math.Max(0, cfg.CacheTtlMinutes));
-        _fileTtl = TimeSpan.FromMinutes(Math.Max(0, cfg.FileTtlMinutes));
-        
-        _cache = factory.GetStorage(StorageType.Cache);
-        _file = factory.GetStorage(StorageType.File);
-        _db = factory.GetStorage(StorageType.Database);
+        _storageSettings = storageSettings.Value ?? new StorageSettings();
     }
 
     public async Task<DataItemDto?> GetAsync(Guid id)
     {
-        var item = await _cache.GetAsync(id);
-        if (item is not null)
+        var storages = _storageFactory.GetAllStorages()
+            .OrderBy(s => s.Priority)
+            .ToList();
+        
+        foreach (var storage in storages)
         {
-            return MapToDto(item);
-        }
-
-        item = await _file.GetAsync(id);
-        if (item is not null)
-        {
-            await _cache.SaveAsync(item, _cacheTtl);
-            return MapToDto(item);
-        }
-
-        item = await _db.GetAsync(id);
-        if (item is not null)
-        {
-            await _file.SaveAsync(item, _fileTtl);
-            await _cache.SaveAsync(item, _cacheTtl);
-            return MapToDto(item);
+            var item = await storage.GetAsync(id);
+            if (item is not null)
+            {
+                await PopulateStoragesWithHigherPriority(item, storage.Priority);
+                return _mapper.Map<DataItemDto>(item);
+            }
         }
 
         return null;
@@ -63,30 +45,61 @@ public sealed class DataRetrievalService : IDataRetrievalService
     public async Task<DataItemDto> CreateAsync(CreateDataItemDto dto)
     {
         var entity = CreateDataItem(dto.Value);
+        
+        var storages = _storageFactory.GetAllStorages()
+            .OrderBy(s => s.Priority);
 
-        await SaveToMultipleStorages(entity);
+        foreach (var storage in storages)
+        {
+            var config = GetStorageConfiguration(storage.StorageType);
+            var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);
+            await storage.SaveAsync(entity, ttl);
+        }
 
-        return MapToDto(entity);
+        return _mapper.Map<DataItemDto>(entity);
     }
 
     public async Task UpdateAsync(Guid id, UpdateDataItemDto dto)
     {
-        var entity = await _db.GetAsync(id) ?? throw new Exception($"Record with ID - {id} not found.");
+        var item = await GetAsync(id);
+        if (item == null)
+            throw new Exception($"Record with ID - {id} not found.");
 
-        entity.Value = dto.Value;
+        var entity = new DataItem
+        {
+            Id = id,
+            Value = dto.Value,
+            CreatedAt = item.CreatedAt
+        };
 
-        await SaveToMultipleStorages(entity);
+        var storages = _storageFactory.GetAllStorages()
+            .OrderBy(s => s.Priority);
+
+        foreach (var storage in storages)
+        {
+            var config = GetStorageConfiguration(storage.StorageType);
+            var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);
+            await storage.SaveAsync(entity, ttl);
+        }
     }
 
-    private async Task SaveToMultipleStorages(DataItem entity)
+    private async Task PopulateStoragesWithHigherPriority(DataItem item, int currentPriority)
     {
-        await _db.SaveAsync(entity, TimeSpan.Zero);
-        
-        await _file.SaveAsync(entity, _fileTtl);
-        await _cache.SaveAsync(entity, _cacheTtl);
+        var higherPriorityStorages = _storageFactory.GetAllStorages()
+            .Where(s => s.Priority > currentPriority);
+
+        foreach (var storage in higherPriorityStorages)
+        {
+            var config = GetStorageConfiguration(storage.StorageType);
+            var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);
+            await storage.SaveAsync(item, ttl);
+        }
     }
 
-    private DataItemDto MapToDto(DataItem item) => _mapper.Map<DataItemDto>(item);
+    private StorageConfiguration? GetStorageConfiguration(string storageType)
+    {
+        return _storageSettings.Storages.FirstOrDefault(s => s.Type == storageType);
+    }
 
     private static DataItem CreateDataItem(string value) => new()
     {

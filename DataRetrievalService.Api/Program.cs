@@ -163,6 +163,7 @@ builder.Services.AddCors(opt =>
 
 builder.Services.Configure<SeedUsersOptions>(config.GetSection("SeedUsers"));
 builder.Services.Configure<DataRetrievalSettings>(config.GetSection("DataRetrieval"));
+builder.Services.Configure<StorageSettings>(config.GetSection("StorageSettings"));
 
 var app = builder.Build();
 

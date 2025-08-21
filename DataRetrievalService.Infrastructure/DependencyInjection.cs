@@ -3,7 +3,6 @@ using DataRetrievalService.Infrastructure.Storage.Services;
 using DataRetrievalService.Infrastructure.Decorators;
 using DataRetrievalService.Infrastructure.Factories;
 using DataRetrievalService.Infrastructure.Identity;
-using DataRetrievalService.Infrastructure.Storage.StorageAdapters;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Retry;
@@ -17,12 +16,10 @@ public static class DependencyInjection
         services.AddScoped<IDataRepository, DataRepository>();
         services.AddScoped<ICacheService, DistributedCacheService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
+        
         services.AddScoped<IStorageFactory, StorageFactory>();
+        
         services.AddScoped<IAuthService, AuthService>();
-
-        services.AddScoped<CacheStorageAdapter>();
-        services.AddScoped<FileStorageAdapter>();
-        services.AddScoped<DatabaseStorageAdapter>();
 
         services.Decorate<ICacheService, LoggingCacheServiceDecorator>();
         services.Decorate<IFileStorageService, LoggingFileStorageServiceDecorator>();

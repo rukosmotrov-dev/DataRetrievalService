@@ -4,5 +4,5 @@ namespace DataRetrievalService.Application.Interfaces;
 
 public interface IStorageFactory
 {
-    IStorageService GetStorage(StorageType storageType);
+    IEnumerable<IStorageService> GetAllStorages();
 }
