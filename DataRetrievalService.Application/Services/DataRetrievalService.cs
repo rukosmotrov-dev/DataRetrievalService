@@ -34,7 +34,7 @@ public sealed class DataRetrievalService : IDataRetrievalService
             var item = await storage.GetAsync(id);
             if (item is not null)
             {
-                await PopulateStoragesWithHigherPriority(item, storage.Priority);
+                await PopulateStoragesByPriority(item, storage.Priority);
                 return _mapper.Map<DataItemDto>(item);
             }
         }
@@ -44,51 +44,46 @@ public sealed class DataRetrievalService : IDataRetrievalService
 
     public async Task<DataItemDto> CreateAsync(CreateDataItemDto dto)
     {
-        var entity = CreateDataItem(dto.Value);
+        var dataItem = CreateDataItem(dto.Value);
         
         var storages = _storageFactory.GetAllStorages()
             .OrderBy(s => s.Priority);
 
-        foreach (var storage in storages)
-        {
-            var config = GetStorageConfiguration(storage.StorageType);
-            var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);
-            await storage.SaveAsync(entity, ttl);
-        }
+        await SaveDataItemInStoragesAsync(storages, dataItem);
 
-        return _mapper.Map<DataItemDto>(entity);
+        return _mapper.Map<DataItemDto>(dataItem);
     }
 
     public async Task UpdateAsync(Guid id, UpdateDataItemDto dto)
     {
-        var item = await GetAsync(id);
-        if (item == null)
+        var existingDataItem = await GetAsync(id);
+        if (existingDataItem == null)
             throw new InvalidOperationException($"Record with ID - {id} not found.");
 
-        var entity = new DataItem
+        var dataItemToUpdate = new DataItem
         {
             Id = id,
             Value = dto.Value,
-            CreatedAt = item.CreatedAt
+            CreatedAt = existingDataItem.CreatedAt
         };
 
         var storages = _storageFactory.GetAllStorages()
             .OrderBy(s => s.Priority);
 
-        foreach (var storage in storages)
-        {
-            var config = GetStorageConfiguration(storage.StorageType);
-            var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);
-            await storage.SaveAsync(entity, ttl);
-        }
+        await SaveDataItemInStoragesAsync(storages, dataItemToUpdate);
     }
 
-    private async Task PopulateStoragesWithHigherPriority(DataItem item, int currentPriority)
+    private async Task PopulateStoragesByPriority(DataItem dataItem, int currentPriority)
     {
         var higherPriorityStorages = _storageFactory.GetAllStorages()
-            .Where(s => s.Priority > currentPriority);
+            .Where(s => s.Priority < currentPriority);
 
-        foreach (var storage in higherPriorityStorages)
+        await SaveDataItemInStoragesAsync(higherPriorityStorages, dataItem);
+    }
+
+    private async Task SaveDataItemInStoragesAsync(IEnumerable<IStorageService> storages, DataItem item)
+    {
+        foreach (var storage in storages)
         {
             var config = GetStorageConfiguration(storage.StorageType);
             var ttl = TimeSpan.FromMinutes(config?.TtlMinutes ?? 0);

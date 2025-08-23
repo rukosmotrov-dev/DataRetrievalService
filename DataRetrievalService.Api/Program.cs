@@ -64,19 +64,23 @@ builder.Services
         };
     });
 
-builder.Services.
-    AddOptions<DataRetrievalSettings>()
-    .Bind(builder.Configuration.GetSection("DataRetrieval"))
-    .Validate(s => s.CacheTtlMinutes > 0 && s.FileTtlMinutes > 0,
-        "CacheTtlMinutes and FileTtlMinutes must be greater than zero")
-    .ValidateOnStart();
-
 builder.Services
     .AddOptions<FileStorageSettings>()
     .Bind(builder.Configuration.GetSection("FileStorage"))
     .Validate(s => !string.IsNullOrWhiteSpace(s.Path), "FileStorage.Path is required")
     .Validate(s => s.CleanupIntervalMinutes >= 1 && s.CleanupIntervalMinutes <= 1440,
               "FileStorage.CleanupIntervalMinutes must be between 1 and 1440.")
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<StorageSettings>()
+    .Bind(builder.Configuration.GetSection("StorageSettings"))
+    .Validate(s => s.Storages != null && s.Storages.Count > 0, "StorageSettings: At least one storage must be configured.")
+    .Validate(s => s.Storages!.All(storage => !string.IsNullOrWhiteSpace(storage.Name)), "StorageSettings: All storage names must be provided.")
+    .Validate(s => s.Storages!.All(storage => !string.IsNullOrWhiteSpace(storage.Type)), "StorageSettings: All storage types must be provided.")
+    .Validate(s => s.Storages!.All(storage => storage.Priority >= 0), "StorageSettings: All storage priorities must be non-negative.")
+    .Validate(s => s.Storages!.All(storage => storage.TtlMinutes >= 0), "StorageSettings: All storage TTL values must be non-negative.")
+    .Validate(s => s.Storages!.GroupBy(storage => storage.Type).All(group => group.Count() == 1), "StorageSettings: Storage types must be unique.")
     .ValidateOnStart();
 
 builder.Services.AddOptions<JwtOptions>()
@@ -162,8 +166,6 @@ builder.Services.AddCors(opt =>
 });
 
 builder.Services.Configure<SeedUsersOptions>(config.GetSection("SeedUsers"));
-builder.Services.Configure<DataRetrievalSettings>(config.GetSection("DataRetrieval"));
-builder.Services.Configure<StorageSettings>(config.GetSection("StorageSettings"));
 
 var app = builder.Build();
 

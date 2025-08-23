@@ -22,17 +22,19 @@ public sealed class StorageFactory : IStorageFactory
         _logger = logger;
         _storageSettings = storageSettings.Value ?? new StorageSettings();
 
-        InitializeStorages();
-    }
-
-    private void InitializeStorages()
-    {
         CreateConfiguredStorages();
     }
 
     private void CreateConfiguredStorages()
     {
         var storageServices = _serviceProvider.GetServices<IStorageService>();
+
+        if(storageServices.Count() < 1)
+        {
+            var errorMesage = "No storage services are configured. At least one storage service must be registered in the dependency injection container.";
+            _logger.LogError(errorMesage);
+            throw new InvalidOperationException(errorMesage);
+        }
 
         foreach (var storage in storageServices)
         {

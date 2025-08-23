@@ -21,9 +21,9 @@ namespace DataRetrievalService.Tests.Application
             {
                 Storages = new List<StorageConfiguration>
                 {
-                    new StorageConfiguration { Type = "Cache", Priority = 1, TtlMinutes = cacheMin, Name = "Cache Storage" },
-                    new StorageConfiguration { Type = "File", Priority = 2, TtlMinutes = fileMin, Name = "File Storage" },
-                    new StorageConfiguration { Type = "Database", Priority = 3, TtlMinutes = 0, Name = "Database Storage" }
+                                new StorageConfiguration { Type = "Redis Cache", Priority = 1, TtlMinutes = cacheMin, Name = "Cache Storage" },
+            new StorageConfiguration { Type = "File Storage", Priority = 2, TtlMinutes = fileMin, Name = "File Storage" },
+            new StorageConfiguration { Type = "MSSQL Database", Priority = 3, TtlMinutes = 0, Name = "Database Storage" }
                 }
             });
 
@@ -33,15 +33,15 @@ namespace DataRetrievalService.Tests.Application
             file = new Mock<IStorageService>();
             db = new Mock<IStorageService>();
 
-            cache.Setup(s => s.StorageType).Returns("Cache");
+            cache.Setup(s => s.StorageType).Returns("Redis Cache");
             cache.Setup(s => s.Priority).Returns(1);
             cache.Setup(s => s.StorageName).Returns("Cache Storage");
             
-            file.Setup(s => s.StorageType).Returns("File");
+            file.Setup(s => s.StorageType).Returns("File Storage");
             file.Setup(s => s.Priority).Returns(2);
             file.Setup(s => s.StorageName).Returns("File Storage");
             
-            db.Setup(s => s.StorageType).Returns("Database");
+            db.Setup(s => s.StorageType).Returns("MSSQL Database");
             db.Setup(s => s.Priority).Returns(3);
             db.Setup(s => s.StorageName).Returns("Database Storage");
 

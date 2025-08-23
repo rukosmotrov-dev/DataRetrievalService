@@ -27,25 +27,25 @@ public static class DependencyInjection
         services.AddScoped<IStorageService>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<StorageSettings>>();
-            var cacheConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "Cache");
+            var cacheConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "Redis Cache");
             var cacheService = provider.GetRequiredService<ICacheService>();
-            return new CacheStorageAdapter(cacheService, cacheConfig ?? new StorageConfiguration { Type = "Cache", Name = "Cache", Priority = 1 });
+            return new CacheStorageAdapter(cacheService, cacheConfig ?? new StorageConfiguration { Type = "Redis Cache", Name = "Redis Cache", Priority = 1 });
         });
 
         services.AddScoped<IStorageService>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<StorageSettings>>();
-            var fileConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "File");
+            var fileConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "File Storage");
             var fileService = provider.GetRequiredService<IFileStorageService>();
-            return new FileStorageAdapter(fileService, fileConfig ?? new StorageConfiguration { Type = "File", Name = "File", Priority = 2 });
+            return new FileStorageAdapter(fileService, fileConfig ?? new StorageConfiguration { Type = "File Storage", Name = "File Storage", Priority = 2 });
         });
 
         services.AddScoped<IStorageService>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<StorageSettings>>();
-            var dbConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "Database");
+            var dbConfig = options.Value.Storages.FirstOrDefault(s => s.Type == "MSSQL Database");
             var dataRepository = provider.GetRequiredService<IDataRepository>();
-            return new DatabaseStorageAdapter(dataRepository, dbConfig ?? new StorageConfiguration { Type = "Database", Name = "Database", Priority = 3 });
+            return new DatabaseStorageAdapter(dataRepository, dbConfig ?? new StorageConfiguration { Type = "MSSQL Database", Name = "MSSQL Database", Priority = 3 });
         });
 
         services.Decorate<ICacheService, LoggingCacheServiceDecorator>();
